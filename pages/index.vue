@@ -104,7 +104,7 @@
 
 <script lang="ts" setup>
 definePageMeta({
-  pageLabel: 'navigation.home',
+  pageLabel: 'Home',
   navOrder: 1
 })
 

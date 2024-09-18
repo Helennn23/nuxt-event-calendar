@@ -18,7 +18,6 @@
   },
   "devDependencies": {
     "@element-plus/nuxt": "^1.0.9",
-    "@nuxtjs/i18n": "^8.3.0",
     "@nuxtjs/tailwindcss": "^6.12.0",
     "@rushstack/eslint-patch": "^1.10.2",
     "@tsconfig/node20": "^20.1.4",

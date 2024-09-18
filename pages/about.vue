@@ -7,8 +7,6 @@
     <AppIconKnife class="w-7 text-primary hover:text-black cursor-pointer" />
 
     <div>
-      <p>{{ $t('general.welcome') }}</p>
-
       <p>{{ aboutVar }}</p>
       <el-button
         type="primary"
@@ -36,7 +34,7 @@
 
 <script lang="ts" setup>
 definePageMeta({
-  pageLabel: 'navigation.about',
+  pageLabel: 'About',
   navOrder: 2
 })
 
