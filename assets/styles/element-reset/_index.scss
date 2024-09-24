@@ -1,7 +1,7 @@
 @forward 'element-plus/theme-chalk/src/common/var' with (
   $colors: (
     'primary': (
-      'base': #fd823E,
+      'base': #3b82f6,
     ),
     'success': (
       'base': #5E8A4F,
@@ -29,6 +29,7 @@
 @use "element-plus/theme-chalk/src/checkbox";
 @use "element-plus/theme-chalk/src/checkbox-group";
 @use "element-plus/theme-chalk/src/radio";
+@use "element-plus/theme-chalk/src/radio-button";
 @use "element-plus/theme-chalk/src/radio-group";
 @use "element-plus/theme-chalk/src/popper";
 @use "element-plus/theme-chalk/src/card";

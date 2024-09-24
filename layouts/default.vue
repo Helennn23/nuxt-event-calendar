@@ -1,9 +1,10 @@
 <template>
   <div class="flex h-full">
     <!-- SIDEBAR -->
-    <div class="w-[300px] border-r border-gray-300 flex flex-col">
-      <div class="h-20 flex items-center justify-center shrink-0 border-b border-gray-300 shadow px-5">
-        <!-- Language switcher removed -->
+    <div class="w-[230px] border-r border-gray-300 flex flex-col">
+      <div class="h-20 flex items-center justify-center space-x-2 shrink-0 border-b border-gray-300 shadow px-5">
+        <AppIconBird class="w-10" />
+        <AppIconCalendar class="w-6 text-blue-4-700" />
       </div>
 
       <div class="flex-grow p-5">
@@ -28,7 +29,7 @@
         <Compute
           #default="{ data: {labelClass, pageLabel} }"
           :data="{
-            labelClass: 'font-bold text-lg',
+            labelClass: 'text-gray-500 font-medium',
             pageLabel: $route.meta?.pageLabel || ''
           }"
         >
