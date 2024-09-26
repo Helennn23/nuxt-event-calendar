@@ -37,9 +37,7 @@
             :class="[
               'flex justify-end items-start pr-2 h-16 text-gray-600 cursor-pointer border',
               isCurrentDate(day) ? 'bg-blue-100 text-blue-400 hover-animation' : '',
-              isInRange( new Date(year, month, day)) ? 'bg-green-500 hover-animation' : '',
             ]"
-            @click="selectRangeDate(new Date(year, month, day))"
           >
             {{ day }}
           </div>
@@ -53,27 +51,11 @@
             :class="[
               'flex justify-end items-start pr-2 h-16 text-gray-600 cursor-pointer border',
               isCurrentDate(day.day) ? 'bg-blue-100 text-blue-400 hover-animation' : '',
-              isInRange(day.date) ? 'bg-green-500 hover-animation' : '',
             ]"
-            @click="selectRangeDate(day.date)"
           >
             {{ day.day }}
           </div>
         </template>
-      </div>
-    </div>
-
-    <!-- Range Selection Buttons -->
-    <div class="py-4 flex justify-between">
-      <div class="ml-5">
-        <p class="font-semibold text-gray-600">Selected Range:</p>
-        <span class="text-gray-600 text-sm">
-          {{ formattedRange || 'N/A' }}
-        </span>
-      </div>
-      <div>
-        <el-button type="danger" @click="clearRange">Clear Range</el-button>
-        <el-button type="primary" @click="saveRange">Save Range</el-button>
       </div>
     </div>
   </div>
@@ -92,17 +74,7 @@ const today = new Date()
 const date = ref(new Date())
 const year = ref(date.value.getFullYear())
 const month = ref(date.value.getMonth())
-const startDate = ref<Date | null>(null)
-const endDate = ref<Date | null>(null)
-const savedRange = ref<{ start: Date | null; end: Date | null }>({ start: null, end: null })
 const currentView = ref(ECalendarViewType.month)
-const formattedRange = computed(() =>
-  startDate.value && endDate.value
-    ? `${startDate.value.toDateString()} - ${endDate.value.toDateString()}`
-    : startDate.value
-      ? startDate.value.toDateString()
-      : null
-)
 
 const daysInMonth = (year: number, month: number): number =>
   new Date(year, month + 1, 0).getDate()
@@ -172,46 +144,6 @@ const isCurrentDate = (day: number): boolean => {
     month.value === today.getMonth() &&
     day === today.getDate()
   )
-}
-
-// Highlight if a day is selected or is within the range
-const isInRange = (dateObj: Date): boolean => {
-  if (!startDate.value && !endDate.value) return false
-
-  const current = dateObj
-  if (endDate.value && startDate.value) {
-    return current >= startDate.value && current <= endDate.value
-  }
-  return current.getTime() === startDate.value?.getTime()
-}
-
-// Select start and end dates
-const selectRangeDate = (dateObj: Date): void => {
-  const selected = dateObj
-
-  if (!startDate.value) {
-    startDate.value = selected
-  } else if (!endDate.value) {
-    if (selected < startDate.value) {
-      endDate.value = startDate.value
-      startDate.value = selected
-    } else {
-      endDate.value = selected
-    }
-  } else {
-    startDate.value = selected
-    endDate.value = null
-  }
-}
-
-const clearRange = (): void => {
-  startDate.value = null
-  endDate.value = null
-}
-
-const saveRange = (): void => {
-  savedRange.value = { start: startDate.value, end: endDate.value }
-  console.log('Saved Range:', savedRange.value)
 }
 
 const goToToday = (): void => {
