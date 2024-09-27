@@ -36,8 +36,12 @@
             :key="day"
             :class="[
               'flex justify-end items-start pr-2 h-16 text-gray-600 cursor-pointer border',
-              isCurrentDate(day) ? 'bg-blue-100 text-blue-400 hover-animation' : '',
+              isCurrentDate(day)
+                ? 'bg-blue-100 text-blue-800 hover:text-blue-500 hover-animation'
+                : 'hover:bg-gray-100 hover:text-blue-500 hover-animation',
+              selectedDays.includes(new Date(year, month, day).toDateString()) ? 'bg-green-100' : ''
             ]"
+            @click="toggleDaySelection(day)"
           >
             {{ day }}
           </div>
@@ -50,12 +54,22 @@
             :key="day.day"
             :class="[
               'flex justify-end items-start pr-2 h-16 text-gray-600 cursor-pointer border',
-              isCurrentDate(day.day) ? 'bg-blue-100 text-blue-400 hover-animation' : '',
+              isCurrentDate(day.day)
+                ? 'bg-blue-100 text-blue-800 hover:text-blue-500 hover-animation'
+                : 'hover:bg-gray-100 hover:text-blue-500 hover-animation',
+              selectedDays.includes(day.date.toDateString()) ? 'bg-green-100' : ''
             ]"
+
+            @click="toggleDaySelection(day.day)"
           >
             {{ day.day }}
           </div>
         </template>
+      </div>
+
+      <div class="flex justify-between mt-4">
+        <el-button type="danger" @click="clearSelection">Clear Selection</el-button>
+        <el-button type="primary" @click="saveSelection">Save Selection</el-button>
       </div>
     </div>
   </div>
@@ -75,6 +89,8 @@ const date = ref(new Date())
 const year = ref(date.value.getFullYear())
 const month = ref(date.value.getMonth())
 const currentView = ref(ECalendarViewType.month)
+
+const selectedDays = ref<string[]>([])
 
 const daysInMonth = (year: number, month: number): number =>
   new Date(year, month + 1, 0).getDate()
@@ -162,7 +178,10 @@ const currentWeekDays = ref<{ day: number; date: Date }[]>([])
 const updateCurrentWeek = (weekStartDate?: Date): void => {
   const startDate = weekStartDate instanceof Date ? weekStartDate : new Date()
 
-  const startOfWeek = new Date(startDate.setDate(startDate.getDate() - startDate.getDay()))
+  // Calculate the start of the week based on the provided date
+  const startOfWeek = new Date(startDate)
+  startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay())
+
   updateWeek(startOfWeek)
 }
 
@@ -196,4 +215,37 @@ const updateWeek = (startOfWeek: Date): void => {
     year: 'numeric'
   })
 }
+
+// Toggle day selection
+const toggleDaySelection = (day: number): void => {
+  let selectedDate = ''
+  if (currentView.value === ECalendarViewType.month) {
+    selectedDate = new Date(year.value, month.value, day).toDateString() // Month view
+  } else {
+    const currentWeekDay = currentWeekDays.value.find(d => d.day === day)
+    if (currentWeekDay) {
+      selectedDate = currentWeekDay.date.toDateString() // Week view, use the full date
+    }
+  }
+
+  if (selectedDays.value.includes(selectedDate)) {
+    selectedDays.value = selectedDays.value.filter(date => date !== selectedDate) // Unselect
+  } else {
+    selectedDays.value.push(selectedDate) // Select
+  }
+}
+
+const clearSelection = () => {
+  selectedDays.value = []
+}
+
+const saveSelection = () => {
+  console.log('Selected Days:', selectedDays.value)
+}
 </script>
+
+<style lang="scss">
+.hover-animation {
+  @apply ease-in-out duration-150;
+}
+</style>
