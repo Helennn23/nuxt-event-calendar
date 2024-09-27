@@ -1,107 +1,150 @@
 <template>
   <div>
-    <div>
-      <header class="flex justify-between items-center px-4 py-5">
-        <el-button type="primary" size="large" @click="goToToday">Today</el-button>
+    <header class="flex justify-between items-center px-4 py-5">
+      <el-button type="primary" size="large" @click="goToToday">Today</el-button>
 
-        <div class="flex gap-x-4 text-blue-500">
-          <pre class="cursor-pointer text-lg hover:text-blue-600 hover-animation" @click="previousUnit">◀◀</pre>
-          <p class="w-40 text-center text-xl font-semibold">{{ formattedDate }}</p>
-          <pre class="cursor-pointer text-lg hover:text-blue-600 hover-animation" @click="nextUnit">▶▶</pre>
-        </div>
-
-        <el-radio-group v-model="currentView" size="large">
-          <el-radio-button label="Month" :value="ECalendarViewType.month" />
-          <el-radio-button label="Week" :value="ECalendarViewType.week" @click="updateCurrentWeek" />
-        </el-radio-group>
-      </header>
-
-      <div class="grid grid-cols-7 gap-1 font-medium opacity-50 text-center">
-        <p>Sunday</p>
-        <p>Monday</p>
-        <p>Tuesday</p>
-        <p>Wednesday</p>
-        <p>Thursday</p>
-        <p>Friday</p>
-        <p>Saturday</p>
+      <div class="flex gap-x-4 text-blue-500">
+        <pre class="cursor-pointer text-lg hover:text-blue-600 hover-animation" @click="previousUnit">◀◀</pre>
+        <p class="w-40 text-center text-xl font-semibold">{{ formattedDate }}</p>
+        <pre class="cursor-pointer text-lg hover:text-blue-600 hover-animation" @click="nextUnit">▶▶</pre>
       </div>
 
-      <!-- DAYS -->
-      <div ref="daysContainer" class="grid grid-cols-7 gap-0.5 py-2">
-        <!-- MONTH VIEW -->
-        <template v-if="currentView === ECalendarViewType.month">
-          <div v-for="blank in firstDayIndex" :key="blank" />
-          <div
-            v-for="day in numberOfDays"
-            :key="day"
-            :class="[
-              'flex justify-end items-start pr-2 h-16 text-gray-600 cursor-pointer border',
-              isCurrentDate(day)
-                ? 'bg-blue-100 text-blue-800 hover:text-blue-500 hover-animation'
-                : 'hover:bg-gray-100 hover:text-blue-500 hover-animation',
-              selectedDays.includes(new Date(year, month, day).toDateString()) ? 'bg-green-100' : ''
-            ]"
-            @click="toggleDaySelection(day)"
-          >
+      <el-radio-group v-model="currentView" size="large">
+        <el-radio-button label="Month" :value="ECalendarViewType.month" />
+        <el-radio-button label="Week" :value="ECalendarViewType.week" @click="updateCurrentWeek" />
+      </el-radio-group>
+    </header>
+
+    <div class="grid grid-cols-7 gap-1 font-medium opacity-50 text-center">
+      <p>Sunday</p>
+      <p>Monday</p>
+      <p>Tuesday</p>
+      <p>Wednesday</p>
+      <p>Thursday</p>
+      <p>Friday</p>
+      <p>Saturday</p>
+    </div>
+
+    <!-- DAYS -->
+    <div ref="daysContainer" class="grid grid-cols-7 gap-0.5 py-2">
+      <!-- MONTH VIEW -->
+      <template v-if="currentView === ECalendarViewType.month">
+        <div v-for="blank in firstDayIndex" :key="blank" />
+        <div
+          v-for="day in numberOfDays"
+          :key="day"
+          :class="[
+            'flex justify-end items-start pr-2 h-16 text-gray-600 cursor-pointer border',
+            isCurrentDate(day)
+              ? 'bg-blue-100 text-blue-800 hover:text-blue-500 hover-animation'
+              : 'hover:bg-gray-100 hover:text-blue-500 hover-animation',
+            selectedDays.includes(new Date(year, month, day).toDateString()) ? 'bg-green-100' : ''
+          ]"
+          @click="toggleDaySelection(day)"
+        >
+          {{ day }}
+        </div>
+      </template>
+
+      <!-- WEEK VIEW -->
+      <template v-else>
+        <div
+          v-for="day in currentWeekDays"
+          :key="day.day"
+          :class="[
+            'flex justify-end items-start pr-2 h-16 text-gray-600 cursor-pointer border',
+            isCurrentDate(day.day)
+              ? 'bg-blue-100 text-blue-800 hover:text-blue-500 hover-animation'
+              : 'hover:bg-gray-100 hover:text-blue-500 hover-animation',
+            selectedDays.includes(day.date.toDateString()) ? 'bg-green-100' : ''
+          ]"
+
+          @click="toggleDaySelection(day.day)"
+        >
+          {{ day.day }}
+        </div>
+      </template>
+    </div>
+
+    <div class="flex justify-between gap-2 mt-5">
+      <div>
+        <h3 class="font-medium opacity-50 mb-3">Selected days:</h3>
+        <ul class="space-y-2">
+          <li v-for="day in selectedDays" :key="day">
+            <el-button class="mr-3" type="danger" :icon="Delete" circle @click="removeDay(day)" />
             {{ day }}
-          </div>
-        </template>
-
-        <!-- WEEK VIEW -->
-        <template v-else>
-          <div
-            v-for="day in currentWeekDays"
-            :key="day.day"
-            :class="[
-              'flex justify-end items-start pr-2 h-16 text-gray-600 cursor-pointer border',
-              isCurrentDate(day.day)
-                ? 'bg-blue-100 text-blue-800 hover:text-blue-500 hover-animation'
-                : 'hover:bg-gray-100 hover:text-blue-500 hover-animation',
-              selectedDays.includes(day.date.toDateString()) ? 'bg-green-100' : ''
-            ]"
-
-            @click="toggleDaySelection(day.day)"
-          >
-            {{ day.day }}
-          </div>
-        </template>
+          </li>
+        </ul>
       </div>
 
-      <div class="flex justify-between gap-2 mt-5">
-        <div>
-          <h3 class="font-medium opacity-50 mb-3">Selected days:</h3>
-          <ul class="space-y-2">
-            <li v-for="day in selectedDays" :key="day">
-              <el-button class="mr-3" type="danger" :icon="Delete" circle @click="removeDay(day)" />
-              {{ day }}
-            </li>
-          </ul>
-        </div>
+      <div class="flex flex-col gap-2">
+        <el-radio-group v-model="excludeType">
+          <el-radio label="weekends" @change="excludeDays">Exclude Weekends</el-radio>
+          <el-radio label="workdays" @change="excludeDays">Exclude Workdays</el-radio>
+        </el-radio-group>
 
-        <div class="flex flex-col gap-2">
-          <el-radio-group v-model="excludeType">
-            <el-radio label="weekends" @change="excludeDays">Exclude Weekends</el-radio>
-            <el-radio label="workdays" @change="excludeDays">Exclude Workdays</el-radio>
-          </el-radio-group>
-
-          <div class="flex justify-between">
-            <el-button type="danger" @click="clearSelection">Clear Selection</el-button>
-            <el-button type="primary" @click="saveSelection">Save Selection</el-button>
-          </div>
+        <div class="flex justify-between">
+          <el-button type="danger" @click="clearSelection">Clear Selection</el-button>
+          <el-button type="primary" @click="saveSelection">Save Selection</el-button>
         </div>
       </div>
     </div>
   </div>
+
+  <el-dialog
+    v-model="dialogVisible"
+    title="Add event"
+    width="500"
+    :destroy-on-close="true"
+    :show-close="false"
+  >
+    <el-form
+      ref="ruleFormRef"
+      style="max-width: 600px"
+      :model="ruleForm"
+      :rules="rules"
+      label-position="top"
+      status-icon
+    >
+      <el-form-item label="Comment" prop="comment">
+        <el-input v-model="ruleForm.comment" placeholder="Please add comment" />
+      </el-form-item>
+
+      <el-form-item label="Type" prop="type">
+        <el-select v-model="ruleForm.type" placeholder="Please select event type">
+          <el-option label="Vacation" value="vacation" />
+          <el-option label="Sick leave" value="sick leave" />
+          <el-option label="Day off" value="day off" />
+        </el-select>
+      </el-form-item>
+
+      <el-form-item>
+        <el-checkbox v-model="ruleForm.recurring">
+          Recurring event
+        </el-checkbox>
+      </el-form-item>
+
+      <el-form-item>
+        <el-button @click="handleClose()">Cancel</el-button>
+        <el-button type="primary" @click="submitForm(ruleFormRef)">
+          Create
+        </el-button>
+      </el-form-item>
+    </el-form>
+  </el-dialog>
 </template>
 
 <script lang="ts" setup>
 import { Delete } from '@element-plus/icons-vue'
 import { ECalendarViewType } from '@/types/enums'
+import type { FormInstance, FormRules } from 'element-plus'
 
 definePageMeta({
   pageLabel: 'Calendar',
   navOrder: 1
 })
+
+const dialogVisible = ref(false)
 
 const today = new Date()
 
@@ -270,6 +313,7 @@ const clearSelection = () => {
 }
 
 const saveSelection = () => {
+  dialogVisible.value = true
   localStorage.setItem('selectedDays', JSON.stringify(selectedDays.value))
 }
 
@@ -294,6 +338,40 @@ const excludeDays = () => {
   if (!selectedDays.value.length) {
     excludeType.value = ''
   }
+}
+
+const handleClose = () => {
+  dialogVisible.value = false
+  ruleForm.comment = ''
+  ruleForm.type = ''
+  ruleForm.recurring = false
+}
+
+const ruleFormRef = ref<FormInstance>()
+
+const ruleForm = reactive({
+  comment: '',
+  type: '',
+  recurring: false
+})
+
+const rules = reactive<FormRules>({
+  comment: { required: true, message: 'Please add comment', trigger: 'change' },
+  type: { required: true, message: 'Please select event type', trigger: 'change' }
+})
+
+const submitForm = async (formEl: FormInstance | undefined) => {
+  if (!formEl) return
+  await formEl.validate((valid, fields) => {
+    if (valid) {
+      ruleForm.comment = ''
+      ruleForm.type = ''
+      ruleForm.recurring = false
+      dialogVisible.value = false
+    } else {
+      console.log('error in:', fields)
+    }
+  })
 }
 </script>
 
