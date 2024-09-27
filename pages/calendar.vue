@@ -67,15 +67,35 @@
         </template>
       </div>
 
-      <div class="flex justify-between mt-4">
-        <el-button type="danger" @click="clearSelection">Clear Selection</el-button>
-        <el-button type="primary" @click="saveSelection">Save Selection</el-button>
+      <div class="flex justify-between gap-2 mt-5">
+        <div>
+          <h3 class="font-medium opacity-50 mb-3">Selected days:</h3>
+          <ul class="space-y-2">
+            <li v-for="day in selectedDays" :key="day">
+              <el-button class="mr-3" type="danger" :icon="Delete" circle @click="removeDay(day)" />
+              {{ day }}
+            </li>
+          </ul>
+        </div>
+
+        <div class="flex flex-col gap-2">
+          <el-radio-group v-model="excludeType">
+            <el-radio label="weekends" @change="excludeDays">Exclude Weekends</el-radio>
+            <el-radio label="workdays" @change="excludeDays">Exclude Workdays</el-radio>
+          </el-radio-group>
+
+          <div class="flex justify-between">
+            <el-button type="danger" @click="clearSelection">Clear Selection</el-button>
+            <el-button type="primary" @click="saveSelection">Save Selection</el-button>
+          </div>
+        </div>
       </div>
     </div>
   </div>
 </template>
 
 <script lang="ts" setup>
+import { Delete } from '@element-plus/icons-vue'
 import { ECalendarViewType } from '@/types/enums'
 
 definePageMeta({
@@ -91,6 +111,7 @@ const month = ref(date.value.getMonth())
 const currentView = ref(ECalendarViewType.month)
 
 const selectedDays = ref<string[]>([])
+const excludeType = ref('')
 
 const daysInMonth = (year: number, month: number): number =>
   new Date(year, month + 1, 0).getDate()
@@ -219,6 +240,7 @@ const updateWeek = (startOfWeek: Date): void => {
 // Toggle day selection
 const toggleDaySelection = (day: number): void => {
   let selectedDate = ''
+
   if (currentView.value === ECalendarViewType.month) {
     selectedDate = new Date(year.value, month.value, day).toDateString() // Month view
   } else {
@@ -235,17 +257,48 @@ const toggleDaySelection = (day: number): void => {
   }
 }
 
+const removeDay = (selectedDate: string) => {
+  selectedDays.value = selectedDays.value.filter(date => date !== selectedDate)
+}
+
 const clearSelection = () => {
   selectedDays.value = []
+
+  if (!selectedDays.value.length) {
+    excludeType.value = ''
+  }
 }
 
 const saveSelection = () => {
-  console.log('Selected Days:', selectedDays.value)
+  localStorage.setItem('selectedDays', JSON.stringify(selectedDays.value))
+}
+
+const isWeekend = (date: Date): boolean => {
+  const day = date.getDay()
+  return day === 0 || day === 6 // Sunday or Saturday
+}
+
+const excludeDays = () => {
+  if (!excludeType.value) return
+
+  selectedDays.value = selectedDays.value.filter((dayStr) => {
+    const day = new Date(dayStr)
+
+    if (excludeType.value === 'weekends') {
+      return !isWeekend(day) // Keep only workdays
+    } else if (excludeType.value === 'workdays') {
+      return isWeekend(day) // Keep only weekends
+    }
+  })
+
+  if (!selectedDays.value.length) {
+    excludeType.value = ''
+  }
 }
 </script>
 
-<style lang="scss">
+<style scoped>
 .hover-animation {
-  @apply ease-in-out duration-150;
+  transition: all 0.2s;
 }
 </style>
