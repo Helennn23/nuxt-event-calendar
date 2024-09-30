@@ -10,11 +10,12 @@
       </div>
 
       <el-radio-group v-model="currentView" size="large">
-        <el-radio-button label="Month" :value="ECalendarViewType.month" />
-        <el-radio-button label="Week" :value="ECalendarViewType.week" @click="updateCurrentWeek" />
+        <el-radio-button :value="ECalendarViewType.month">Month</el-radio-button>
+        <el-radio-button :value="ECalendarViewType.week" @click="updateCurrentWeek">Week</el-radio-button>
       </el-radio-group>
     </header>
 
+    <!-- WEEK DAYS -->
     <div class="grid grid-cols-7 gap-1 font-medium opacity-50 text-center">
       <p>Sunday</p>
       <p>Monday</p>
@@ -34,15 +35,18 @@
           v-for="day in numberOfDays"
           :key="day"
           :class="[
-            'flex justify-end items-start pr-2 h-16 text-gray-600 cursor-pointer border',
+            'relative flex justify-end items-start pr-2 h-16 text-gray-600 cursor-pointer border',
             isCurrentDate(day)
               ? 'bg-blue-100 text-blue-800 hover:text-blue-500 hover-animation'
               : 'hover:bg-gray-100 hover:text-blue-500 hover-animation',
-            selectedDays.includes(new Date(year, month, day).toDateString()) ? 'bg-green-100' : ''
           ]"
           @click="toggleDaySelection(day)"
         >
-          {{ day }}
+          <span>{{ day }}</span>
+          <AppIconCheck
+            v-if=" selectedDays.includes(new Date(year, month, day).toDateString())"
+            class="absolute top-[30%] right-[45%] cursor-pointer"
+          />
         </div>
       </template>
 
@@ -52,16 +56,19 @@
           v-for="day in currentWeekDays"
           :key="day.day"
           :class="[
-            'flex justify-end items-start pr-2 h-16 text-gray-600 cursor-pointer border',
+            'relative flex justify-end items-start pr-2 h-16 text-gray-600 cursor-pointer border',
             isCurrentDate(day.day)
               ? 'bg-blue-100 text-blue-800 hover:text-blue-500 hover-animation'
               : 'hover:bg-gray-100 hover:text-blue-500 hover-animation',
-            selectedDays.includes(day.date.toDateString()) ? 'bg-green-100' : ''
           ]"
 
           @click="toggleDaySelection(day.day)"
         >
-          {{ day.day }}
+          <span>{{ day.day }}</span>
+          <AppIconCheck
+            v-if="selectedDays.includes(day.date.toDateString())"
+            class="absolute top-[30%] right-[45%] cursor-pointer"
+          />
         </div>
       </template>
     </div>
@@ -79,13 +86,13 @@
 
       <div class="flex flex-col gap-2">
         <el-radio-group v-model="excludeType">
-          <el-radio label="weekends" @change="excludeDays">Exclude Weekends</el-radio>
-          <el-radio label="workdays" @change="excludeDays">Exclude Workdays</el-radio>
+          <el-radio value="weekends" @change="excludeDays">Exclude Weekends</el-radio>
+          <el-radio value="workdays" @change="excludeDays">Exclude Workdays</el-radio>
         </el-radio-group>
 
         <div class="flex justify-between">
-          <el-button type="danger" @click="clearSelection">Clear Selection</el-button>
-          <el-button type="primary" @click="saveSelection">Save Selection</el-button>
+          <el-button type="danger" :disabled="!selectedDays.length" @click="clearSelection">Clear Selection</el-button>
+          <el-button type="primary" :disabled="!selectedDays.length" @click="saveSelection">Save Selection</el-button>
         </div>
       </div>
     </div>
@@ -280,6 +287,10 @@ const updateWeek = (startOfWeek: Date): void => {
   })
 }
 
+const removeDay = (selectedDate: string) => {
+  selectedDays.value = selectedDays.value.filter(date => date !== selectedDate)
+}
+
 // Toggle day selection
 const toggleDaySelection = (day: number): void => {
   let selectedDate = ''
@@ -294,14 +305,10 @@ const toggleDaySelection = (day: number): void => {
   }
 
   if (selectedDays.value.includes(selectedDate)) {
-    selectedDays.value = selectedDays.value.filter(date => date !== selectedDate) // Unselect
+    removeDay(selectedDate) // Unselect
   } else {
     selectedDays.value.push(selectedDate) // Select
   }
-}
-
-const removeDay = (selectedDate: string) => {
-  selectedDays.value = selectedDays.value.filter(date => date !== selectedDate)
 }
 
 const clearSelection = () => {
@@ -342,6 +349,7 @@ const excludeDays = () => {
 
 const handleClose = () => {
   dialogVisible.value = false
+  // TODO refactor move to component or to function
   ruleForm.comment = ''
   ruleForm.type = ''
   ruleForm.recurring = false
@@ -362,14 +370,13 @@ const rules = reactive<FormRules>({
 
 const submitForm = async (formEl: FormInstance | undefined) => {
   if (!formEl) return
-  await formEl.validate((valid, fields) => {
+
+  await formEl.validate((valid) => {
     if (valid) {
       ruleForm.comment = ''
       ruleForm.type = ''
       ruleForm.recurring = false
       dialogVisible.value = false
-    } else {
-      console.log('error in:', fields)
     }
   })
 }

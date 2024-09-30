@@ -14,7 +14,7 @@
     "lint": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --fix --ignore-path .gitignore"
   },
   "dependencies": {
-    "element-plus": "^2.7.1"
+    "element-plus": "^2.8.4"
   },
   "devDependencies": {
     "@element-plus/nuxt": "^1.0.9",
