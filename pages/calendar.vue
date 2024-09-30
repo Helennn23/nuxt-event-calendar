@@ -45,7 +45,7 @@
           <span>{{ day }}</span>
           <AppIconCheck
             v-if=" selectedDays.includes(new Date(year, month, day).toDateString())"
-            class="absolute top-[30%] right-[45%] cursor-pointer"
+            class="absolute top-[30%] right-[45%] opacity-50 cursor-pointer"
           />
         </div>
       </template>
@@ -67,7 +67,7 @@
           <span>{{ day.day }}</span>
           <AppIconCheck
             v-if="selectedDays.includes(day.date.toDateString())"
-            class="absolute top-[30%] right-[45%] cursor-pointer"
+            class="absolute top-[30%] right-[45%] opacity-50 cursor-pointer"
           />
         </div>
       </template>
@@ -119,20 +119,37 @@
 
       <el-form-item label="Type" prop="type">
         <el-select v-model="ruleForm.type" placeholder="Please select event type">
-          <el-option label="Vacation" value="vacation" />
-          <el-option label="Sick leave" value="sick leave" />
-          <el-option label="Day off" value="day off" />
+          <!-- Events available only for weekends -->
+          <el-option-group label="Weekends Only">
+            <el-option label="Family Gathering" value="family-gathering" />
+            <el-option label="Weekend Trip" value="weekend-trip" />
+          </el-option-group>
+
+          <!-- Events available only for weekdays -->
+          <el-option-group label="Weekdays Only">
+            <el-option label="Work Meeting" value="work-meeting" />
+            <el-option label="Day Off" value="day-off" />
+            <el-option label="Workshop" value="workshop" />
+            <el-option label="Sick leave" value="sick leave" />
+          </el-option-group>
+
+          <!-- Events available for both -->
+          <el-option-group label="Available for Both">
+            <el-option label="Holiday" value="holiday" />
+            <el-option label="Birthday" value="birthday" />
+            <el-option label="Vacation" value="vacation" />
+          </el-option-group>
         </el-select>
       </el-form-item>
 
       <el-form-item>
         <el-checkbox v-model="ruleForm.recurring">
-          Recurring event
+          Monthly recurring event
         </el-checkbox>
       </el-form-item>
 
       <el-form-item>
-        <el-button @click="handleClose()">Cancel</el-button>
+        <el-button @click="handleClose">Cancel</el-button>
         <el-button type="primary" @click="submitForm(ruleFormRef)">
           Create
         </el-button>
@@ -145,6 +162,7 @@
 import { Delete } from '@element-plus/icons-vue'
 import { ECalendarViewType } from '@/types/enums'
 import type { FormInstance, FormRules } from 'element-plus'
+import type { IRuleForm } from './calendar'
 
 definePageMeta({
   pageLabel: 'Calendar',
@@ -370,7 +388,7 @@ const rules = reactive<FormRules>({
 
 const submitForm = async (formEl: FormInstance | undefined) => {
   if (!formEl) return
-
+  saveEventToLocalStorage(ruleForm, selectedDays.value)
   await formEl.validate((valid) => {
     if (valid) {
       ruleForm.comment = ''
@@ -379,6 +397,65 @@ const submitForm = async (formEl: FormInstance | undefined) => {
       dialogVisible.value = false
     }
   })
+}
+
+const saveEventToLocalStorage = (ruleForm: IRuleForm, selectedDays: string[]) => {
+  // Parse the date strings into Date objects
+  const dates: Date[] = selectedDays.map(dateString => new Date(dateString))
+
+  // Check if the dates array is not empty
+  if (dates.length === 0) {
+    console.error('No selected days provided.')
+    return
+  }
+
+  const year = dates[0].getFullYear()
+  const month = dates[0].getMonth() + 1
+
+  // Retrieve existing events from localStorage or initialize an empty object
+  const existingEvents = JSON.parse(localStorage.getItem('events') || '{}')
+
+  // Loop through selected days and save the event
+  dates.forEach(day => {
+    const dayOfMonth = day.getDate()
+    const uniqueId = `${ruleForm.comment}-${Date.now()}`
+    const event = {
+      comment: ruleForm.comment,
+      id: uniqueId,
+      recurring: ruleForm.recurring,
+      type: ruleForm.type
+    }
+
+    if (ruleForm.recurring) {
+      // Save the event for all months until the end of the year
+      for (let m = month; m <= 12; m++) {
+        if (!existingEvents[year]) {
+          existingEvents[year] = {}
+        }
+        if (!existingEvents[year][m]) {
+          existingEvents[year][m] = {}
+        }
+        if (!existingEvents[year][m][dayOfMonth]) {
+          existingEvents[year][m][dayOfMonth] = []
+        }
+        existingEvents[year][m][dayOfMonth].push(event)
+      }
+    } else {
+      // Save only for the selected month
+      if (!existingEvents[year]) {
+        existingEvents[year] = {}
+      }
+      if (!existingEvents[year][month]) {
+        existingEvents[year][month] = {}
+      }
+      if (!existingEvents[year][month][dayOfMonth]) {
+        existingEvents[year][month][dayOfMonth] = []
+      }
+      existingEvents[year][month][dayOfMonth].push(event)
+    }
+  })
+
+  localStorage.setItem('events', JSON.stringify(existingEvents))
 }
 </script>
 
