@@ -1,5 +1,8 @@
 <template>
-  <div>
+  <div v-if="loading" class="text-center font-semibold text-gray-500">
+    Loading...
+  </div>
+  <div v-else>
     <header class="flex justify-between items-center px-4 py-5">
       <el-button type="primary" size="large" @click="goToToday">Today</el-button>
 
@@ -53,7 +56,7 @@
             :class="['flex justify-between items-center w-full pl-2 text-xs',
                      eventColors[event.type]]"
           >
-            <p>{{ event.comment }}</p>
+            <p class="truncate">{{ event.comment }}</p>
             <button @click.stop="handleClickDelete(event, year, month, day)"><AppIconDelete /></button>
           </div>
         </div>
@@ -83,7 +86,7 @@
             :class="['flex justify-between items-center w-full pl-2 text-xs',
                      eventColors[event.type]]"
           >
-            <p>{{ event.comment }}</p>
+            <p class="truncate">{{ event.comment }}</p>
             <button @click.stop="handleClickDelete(event, year, dayEntity.month, dayEntity.day)">
               <AppIconDelete />
             </button>
@@ -111,7 +114,12 @@
 
         <div class="flex justify-between">
           <el-button type="danger" :disabled="!selectedDays.length" @click="clearSelection">Clear Selection</el-button>
-          <el-button type="primary" :disabled="!selectedDays.length" @click="saveSelection">Save Selection</el-button>
+          <el-button
+            type="primary"
+            :disabled="!selectedDays.length" @click="dialogVisible = true"
+          >
+            Save Selection
+          </el-button>
         </div>
       </div>
     </div>
@@ -130,7 +138,6 @@
       :model="eventDetails"
       :rules="rules"
       label-position="top"
-      status-icon
     >
       <el-form-item label="Comment" prop="comment">
         <el-input v-model="eventDetails.comment" placeholder="Please add comment" />
@@ -189,6 +196,7 @@ definePageMeta({
   navOrder: 1
 })
 
+const loading = ref(true)
 const dialogVisible = ref(false)
 
 const events = ref<any>({})
@@ -219,7 +227,7 @@ const formattedDate = ref<string>(
   })
 )
 
-const deleteEvent = (event: ICalendarEvent, year: number, month: number, day: number) => {
+const deleteSpecificEvent = (event: ICalendarEvent, year: number, month: number, day: number) => {
   const dayEvents = events.value[year]?.[month]?.[day]
   if (!dayEvents) return
 
@@ -228,13 +236,13 @@ const deleteEvent = (event: ICalendarEvent, year: number, month: number, day: nu
 
   dayEvents.splice(eventIndex, 1)
 
-  if (dayEvents.length === 0) {
+  if (!dayEvents.length) {
     delete events.value[year][month][day]
 
-    if (Object.keys(events.value[year][month]).length === 0) {
+    if (!Object.keys(events.value[year][month]).length) {
       delete events.value[year][month]
 
-      if (Object.keys(events.value[year]).length === 0) {
+      if (!Object.keys(events.value[year]).length) {
         delete events.value[year]
       }
     }
@@ -243,11 +251,30 @@ const deleteEvent = (event: ICalendarEvent, year: number, month: number, day: nu
   localStorage.setItem('events', JSON.stringify(events.value))
 }
 
-const handleClickDelete = (event: any, year: number, month: number, day: number) => {
+function removeRecurringEvents (event: ICalendarEvent, year: number) {
+  const yearData = events.value[year]
+  if (!yearData) return events.value
+
+  Object.keys(yearData).forEach((month) => {
+    Object.keys(yearData[month]).forEach((day) => {
+      yearData[month][day] = yearData[month][day].filter((item: ICalendarEvent) => item.id !== event.id)
+
+      if (!yearData[month][day].length) delete yearData[month][day]
+    })
+
+    if (!Object.keys(yearData[month]).length) delete yearData[month]
+  })
+
+  if (!Object.keys(yearData).length) delete events.value[year]
+
+  localStorage.setItem('events', JSON.stringify(events.value))
+}
+
+const handleClickDelete = (event: ICalendarEvent, year: number, month: number, day: number) => {
   if (event.recurring) {
-    deleteEvent(event, year, month + 1, day)
+    openRecurringDeleteConfirm(event, year, month + 1, day)
   } else {
-    deleteEvent(event, year, month + 1, day)
+    deleteSpecificEvent(event, year, month + 1, day)
   }
 }
 
@@ -261,7 +288,6 @@ const updateCalendar = () => {
       year: 'numeric'
     }
   )
-  events.value = JSON.parse(localStorage.getItem('events') || '{}')
 }
 
 const previousUnit = (): void => {
@@ -392,11 +418,6 @@ const clearSelection = () => {
   }
 }
 
-const saveSelection = () => {
-  dialogVisible.value = true
-  localStorage.setItem('selectedDays', JSON.stringify(selectedDays.value))
-}
-
 const isWeekend = (date: Date): boolean => {
   const day = date.getDay()
   return day === 0 || day === 6 // Sunday or Saturday
@@ -443,9 +464,9 @@ const rules = reactive<FormRules>({
 
 const submitForm = async (formEl: FormInstance | undefined) => {
   if (!formEl) return
-  saveEventToLocalStorage(eventDetails, selectedDays.value)
   await formEl.validate((valid) => {
     if (valid) {
+      saveEventToLocalStorage(eventDetails, selectedDays.value)
       eventDetails.comment = ''
       eventDetails.type = ''
       eventDetails.recurring = false
@@ -506,7 +527,7 @@ const saveEventToLocalStorage = (eventDetails: IEventDetails, selectedDays: stri
       existingEvents[year][month][dayOfMonth].push(event)
     }
   })
-
+  events.value = existingEvents
   localStorage.setItem('events', JSON.stringify(existingEvents))
 }
 
@@ -516,10 +537,30 @@ const getEventsForDay = (year: number, month: number, day: number) => {
   return monthEvents[day] || []
 }
 
+const openRecurringDeleteConfirm = (event: ICalendarEvent, year: number, month: number, day: number) => {
+  ElMessageBox.confirm(
+    'Do you want to permanently delete all recurring items?',
+    'Warning',
+    {
+      confirmButtonText: 'Yes, all',
+      cancelButtonText: 'Only selected event',
+      type: 'warning'
+    }
+  )
+    .then(() => {
+      removeRecurringEvents(event, year)
+    })
+    .catch(() => {
+      deleteSpecificEvent(event, year, month, day)
+    })
+}
+
 onMounted(() => {
+  loading.value = true
   if (process.client) {
     const storedEvents = localStorage.getItem('events')
     events.value = storedEvents ? JSON.parse(storedEvents) : {}
+    loading.value = false
   }
 })
 </script>
