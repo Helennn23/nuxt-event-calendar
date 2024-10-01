@@ -35,18 +35,28 @@
           v-for="day in numberOfDays"
           :key="day"
           :class="[
-            'relative flex justify-end items-start pr-2 h-16 text-gray-600 cursor-pointer border',
+            'relative flex flex-col justify-start items-end h-16 text-gray-600 cursor-pointer border overflow-y-auto',
             isCurrentDate(day)
               ? 'bg-blue-100 text-blue-800 hover:text-blue-500 hover-animation'
               : 'hover:bg-gray-100 hover:text-blue-500 hover-animation',
           ]"
           @click="toggleDaySelection(day)"
         >
-          <span>{{ day }}</span>
+          <p class="place-self-center">{{ day }}</p>
           <AppIconCheck
-            v-if=" selectedDays.includes(new Date(year, month, day).toDateString())"
+            v-if="selectedDays.includes(new Date(year, month, day).toDateString())"
             class="absolute top-[30%] right-[45%] opacity-50 cursor-pointer"
           />
+
+          <!-- Render events for the current day -->
+          <div
+            v-for="event in getEventsForDay(year, month, day)" :key="event.id"
+            :class="['flex justify-between items-center w-full pl-2 text-xs',
+                     eventColors[event.type]]"
+          >
+            <p>{{ event.comment }}</p>
+            <button @click.stop="test"><AppIconDelete /></button>
+          </div>
         </div>
       </template>
 
@@ -56,19 +66,28 @@
           v-for="day in currentWeekDays"
           :key="day.day"
           :class="[
-            'relative flex justify-end items-start pr-2 h-16 text-gray-600 cursor-pointer border',
+            'relative flex flex-col justify-start items-end h-80 text-gray-600 cursor-pointer border',
             isCurrentDate(day.day)
               ? 'bg-blue-100 text-blue-800 hover:text-blue-500 hover-animation'
               : 'hover:bg-gray-100 hover:text-blue-500 hover-animation',
           ]"
-
           @click="toggleDaySelection(day.day)"
         >
-          <span>{{ day.day }}</span>
+          <p class="place-self-center">{{ day.day }}</p>
           <AppIconCheck
             v-if="selectedDays.includes(day.date.toDateString())"
             class="absolute top-[30%] right-[45%] opacity-50 cursor-pointer"
           />
+
+          <!-- Render events for the current day -->
+          <div
+            v-for="event in getEventsForDay(year, month, day.day)" :key="event.id"
+            :class="['flex justify-between items-center w-full pl-2 text-xs',
+                     eventColors[event.type]]"
+          >
+            <p>{{ event.comment }}</p>
+            <button @click.stop="test"><AppIconDelete /></button>
+          </div>
         </div>
       </template>
     </div>
@@ -161,6 +180,7 @@
 <script lang="ts" setup>
 import { Delete } from '@element-plus/icons-vue'
 import { ECalendarViewType } from '@/types/enums'
+import { eventColors } from './calendar.config'
 import type { FormInstance, FormRules } from 'element-plus'
 import type { IRuleForm } from './calendar'
 
@@ -170,6 +190,8 @@ definePageMeta({
 })
 
 const dialogVisible = ref(false)
+
+const events = ref({})
 
 const today = new Date()
 
@@ -197,7 +219,11 @@ const formattedDate = ref<string>(
   })
 )
 
-const updateCalendar = (): void => {
+const test = () => {
+  console.log('test')
+}
+
+const updateCalendar = () => {
   numberOfDays.value = daysInMonth(year.value, month.value)
   firstDayIndex.value = firstDayOfMonth(year.value, month.value)
   formattedDate.value = new Date(year.value, month.value).toLocaleString(
@@ -207,6 +233,7 @@ const updateCalendar = (): void => {
       year: 'numeric'
     }
   )
+  events.value = JSON.parse(localStorage.getItem('events') || '{}')
 }
 
 const previousUnit = (): void => {
@@ -404,10 +431,7 @@ const saveEventToLocalStorage = (ruleForm: IRuleForm, selectedDays: string[]) =>
   const dates: Date[] = selectedDays.map(dateString => new Date(dateString))
 
   // Check if the dates array is not empty
-  if (dates.length === 0) {
-    console.error('No selected days provided.')
-    return
-  }
+  if (dates.length === 0) return
 
   const year = dates[0].getFullYear()
   const month = dates[0].getMonth() + 1
@@ -457,6 +481,19 @@ const saveEventToLocalStorage = (ruleForm: IRuleForm, selectedDays: string[]) =>
 
   localStorage.setItem('events', JSON.stringify(existingEvents))
 }
+
+const getEventsForDay = (year: number, month: number, day: number) => {
+  const yearEvents = events.value[year] || {}
+  const monthEvents = yearEvents[month + 1] || {}
+  return monthEvents[day] || []
+}
+
+onMounted(() => {
+  if (process.client) {
+    const storedEvents = localStorage.getItem('events')
+    events.value = storedEvents ? JSON.parse(storedEvents) : {}
+  }
+})
 </script>
 
 <style scoped>
