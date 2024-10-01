@@ -45,9 +45,8 @@
           <p class="place-self-center">{{ day }}</p>
           <AppIconCheck
             v-if="selectedDays.includes(new Date(year, month, day).toDateString())"
-            class="absolute top-[30%] right-[45%] opacity-50 cursor-pointer"
+            class="absolute top-0 right-0 cursor-pointer"
           />
-
           <!-- Render events for the current day -->
           <div
             v-for="event in getEventsForDay(year, month, day)" :key="event.id"
@@ -55,7 +54,7 @@
                      eventColors[event.type]]"
           >
             <p>{{ event.comment }}</p>
-            <button @click.stop="test"><AppIconDelete /></button>
+            <button @click.stop="handleClickDelete(event, year, month, day)"><AppIconDelete /></button>
           </div>
         </div>
       </template>
@@ -63,30 +62,31 @@
       <!-- WEEK VIEW -->
       <template v-else>
         <div
-          v-for="day in currentWeekDays"
-          :key="day.day"
+          v-for="dayEntity in currentWeekDays"
+          :key="dayEntity.day"
           :class="[
             'relative flex flex-col justify-start items-end h-80 text-gray-600 cursor-pointer border',
-            isCurrentDate(day.day)
+            isCurrentDate(dayEntity.day)
               ? 'bg-blue-100 text-blue-800 hover:text-blue-500 hover-animation'
               : 'hover:bg-gray-100 hover:text-blue-500 hover-animation',
           ]"
-          @click="toggleDaySelection(day.day)"
+          @click="toggleDaySelection(dayEntity.day)"
         >
-          <p class="place-self-center">{{ day.day }}</p>
+          <p class="place-self-center">{{ dayEntity.day }}</p>
           <AppIconCheck
-            v-if="selectedDays.includes(day.date.toDateString())"
-            class="absolute top-[30%] right-[45%] opacity-50 cursor-pointer"
+            v-if="selectedDays.includes(dayEntity.date.toDateString())"
+            class="absolute top-0 right-0 cursor-pointer"
           />
-
           <!-- Render events for the current day -->
           <div
-            v-for="event in getEventsForDay(year, month, day.day)" :key="event.id"
+            v-for="event in getEventsForDay(year, dayEntity.month, dayEntity.day)" :key="event.id"
             :class="['flex justify-between items-center w-full pl-2 text-xs',
                      eventColors[event.type]]"
           >
             <p>{{ event.comment }}</p>
-            <button @click.stop="test"><AppIconDelete /></button>
+            <button @click.stop="handleClickDelete(event, year, dayEntity.month, dayEntity.day)">
+              <AppIconDelete />
+            </button>
           </div>
         </div>
       </template>
@@ -127,17 +127,17 @@
     <el-form
       ref="ruleFormRef"
       style="max-width: 600px"
-      :model="ruleForm"
+      :model="eventDetails"
       :rules="rules"
       label-position="top"
       status-icon
     >
       <el-form-item label="Comment" prop="comment">
-        <el-input v-model="ruleForm.comment" placeholder="Please add comment" />
+        <el-input v-model="eventDetails.comment" placeholder="Please add comment" />
       </el-form-item>
 
       <el-form-item label="Type" prop="type">
-        <el-select v-model="ruleForm.type" placeholder="Please select event type">
+        <el-select v-model="eventDetails.type" placeholder="Please select event type">
           <!-- Events available only for weekends -->
           <el-option-group label="Weekends Only">
             <el-option label="Family Gathering" value="family-gathering" />
@@ -162,7 +162,7 @@
       </el-form-item>
 
       <el-form-item>
-        <el-checkbox v-model="ruleForm.recurring">
+        <el-checkbox v-model="eventDetails.recurring">
           Monthly recurring event
         </el-checkbox>
       </el-form-item>
@@ -182,7 +182,7 @@ import { Delete } from '@element-plus/icons-vue'
 import { ECalendarViewType } from '@/types/enums'
 import { eventColors } from './calendar.config'
 import type { FormInstance, FormRules } from 'element-plus'
-import type { IRuleForm } from './calendar'
+import type { IEventDetails, ICalendarEvent } from './calendar'
 
 definePageMeta({
   pageLabel: 'Calendar',
@@ -191,7 +191,7 @@ definePageMeta({
 
 const dialogVisible = ref(false)
 
-const events = ref({})
+const events = ref<any>({})
 
 const today = new Date()
 
@@ -219,8 +219,36 @@ const formattedDate = ref<string>(
   })
 )
 
-const test = () => {
-  console.log('test')
+const deleteEvent = (event: ICalendarEvent, year: number, month: number, day: number) => {
+  const dayEvents = events.value[year]?.[month]?.[day]
+  if (!dayEvents) return
+
+  const eventIndex = dayEvents.findIndex((e: ICalendarEvent) => e.id === event.id)
+  if (eventIndex === -1) return
+
+  dayEvents.splice(eventIndex, 1)
+
+  if (dayEvents.length === 0) {
+    delete events.value[year][month][day]
+
+    if (Object.keys(events.value[year][month]).length === 0) {
+      delete events.value[year][month]
+
+      if (Object.keys(events.value[year]).length === 0) {
+        delete events.value[year]
+      }
+    }
+  }
+
+  localStorage.setItem('events', JSON.stringify(events.value))
+}
+
+const handleClickDelete = (event: any, year: number, month: number, day: number) => {
+  if (event.recurring) {
+    deleteEvent(event, year, month + 1, day)
+  } else {
+    deleteEvent(event, year, month + 1, day)
+  }
 }
 
 const updateCalendar = () => {
@@ -289,7 +317,7 @@ const goToToday = (): void => {
 }
 
 // Week View Logic
-const currentWeekDays = ref<{ day: number; date: Date }[]>([])
+const currentWeekDays = ref<{ day: number; date: Date; month: number }[]>([])
 
 const updateCurrentWeek = (weekStartDate?: Date): void => {
   const startDate = weekStartDate instanceof Date ? weekStartDate : new Date()
@@ -319,7 +347,7 @@ const updateWeek = (startOfWeek: Date): void => {
   for (let i = 0; i < 7; i++) {
     const day = new Date(startOfWeek)
     day.setDate(startOfWeek.getDate() + i)
-    week.push({ day: day.getDate(), date: new Date(day) })
+    week.push({ day: day.getDate(), date: new Date(day), month: day.getMonth() })
   }
 
   // Update month if switching between months
@@ -395,14 +423,14 @@ const excludeDays = () => {
 const handleClose = () => {
   dialogVisible.value = false
   // TODO refactor move to component or to function
-  ruleForm.comment = ''
-  ruleForm.type = ''
-  ruleForm.recurring = false
+  eventDetails.comment = ''
+  eventDetails.type = ''
+  eventDetails.recurring = false
 }
 
 const ruleFormRef = ref<FormInstance>()
 
-const ruleForm = reactive({
+const eventDetails = reactive({
   comment: '',
   type: '',
   recurring: false
@@ -415,18 +443,19 @@ const rules = reactive<FormRules>({
 
 const submitForm = async (formEl: FormInstance | undefined) => {
   if (!formEl) return
-  saveEventToLocalStorage(ruleForm, selectedDays.value)
+  saveEventToLocalStorage(eventDetails, selectedDays.value)
   await formEl.validate((valid) => {
     if (valid) {
-      ruleForm.comment = ''
-      ruleForm.type = ''
-      ruleForm.recurring = false
+      eventDetails.comment = ''
+      eventDetails.type = ''
+      eventDetails.recurring = false
       dialogVisible.value = false
+      selectedDays.value = []
     }
   })
 }
 
-const saveEventToLocalStorage = (ruleForm: IRuleForm, selectedDays: string[]) => {
+const saveEventToLocalStorage = (eventDetails: IEventDetails, selectedDays: string[]) => {
   // Parse the date strings into Date objects
   const dates: Date[] = selectedDays.map(dateString => new Date(dateString))
 
@@ -442,15 +471,14 @@ const saveEventToLocalStorage = (ruleForm: IRuleForm, selectedDays: string[]) =>
   // Loop through selected days and save the event
   dates.forEach(day => {
     const dayOfMonth = day.getDate()
-    const uniqueId = `${ruleForm.comment}-${Date.now()}`
     const event = {
-      comment: ruleForm.comment,
-      id: uniqueId,
-      recurring: ruleForm.recurring,
-      type: ruleForm.type
+      comment: eventDetails.comment,
+      id: `${eventDetails.comment}-${Date.now()}`,
+      recurring: eventDetails.recurring,
+      type: eventDetails.type
     }
 
-    if (ruleForm.recurring) {
+    if (eventDetails.recurring) {
       // Save the event for all months until the end of the year
       for (let m = month; m <= 12; m++) {
         if (!existingEvents[year]) {
