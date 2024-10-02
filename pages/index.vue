@@ -1,153 +1,93 @@
 <template>
-  <el-card class="max-w-[500px]">
-    <el-form
-      ref="ruleFormRef"
-      :model="ruleForm"
-      :rules="rules"
-      status-icon
-    >
-      <el-form-item label="Activity name" prop="name">
-        <el-input v-model="ruleForm.name" />
-      </el-form-item>
+  <div>
+    <h1 class="text-3xl text-gray-700 font-bold mb-4">Nuxt Event Calendar 🦎🐊</h1>
+    <p class="text-md text-gray-600 mb-6">
+      A customizable event calendar built with Nuxt 3 that allows users to select days,
+      switch between week and month views, and manage events with various features like recurring events,
+      local storage integration, and color-coded event types.
+    </p>
 
-      <el-form-item label="Activity zone" prop="region">
-        <client-only>
-          <el-select v-model="ruleForm.region" placeholder="Activity zone">
-            <el-option label="Zone one" value="shanghai" />
-            <el-option label="Zone two" value="beijing" />
-          </el-select>
-        </client-only>
-      </el-form-item>
+    <!-- Feature Section -->
+    <section class="mb-6">
+      <h2 class="text-xl text-gray-700 font-semibold mb-2">Features:</h2>
+      <ul class="text-gray-600 list-disc list-inside">
+        <li v-for="(feature, index) in features" :key="index">
+          <strong>{{ feature.title }}:</strong> {{ feature.description }}
+        </li>
+      </ul>
+    </section>
 
-      <el-form-item label="Activity count" prop="count">
-        <client-only>
-          <el-select
-            v-model="ruleForm.count"
-            placeholder="Activity count"
-          >
-            <el-option
-              v-for="option in options"
-              :key="option.value"
-              :value="option.value"
-              :label="option.label"
-            />
-          </el-select>
-        </client-only>
-      </el-form-item>
+    <!-- Calendar Component Placeholder -->
+    <div class="bg-white shadow-md rounded-lg p-4">
+      <div class="flex justify-between items-center mb-4">
+        <!-- View Toggle (Week/Month) -->
+        <div>
+          <button class="bg-blue-700 text-white py-1 px-3 rounded hover:bg-blue-600 mr-2">Week View</button>
+          <button class="bg-blue-700 text-white py-1 px-3 rounded hover:bg-blue-600">Month View</button>
+        </div>
 
-      <el-form-item label="Activity time" required>
-        <el-col :span="11">
-          <el-form-item prop="date1">
-            <client-only>
-              <el-date-picker
-                v-model="ruleForm.date1"
-                type="date"
-                label="Pick a date"
-                placeholder="Pick a date"
-                style="width: 100%"
-              />
-            </client-only>
-          </el-form-item>
-        </el-col>
+        <!-- Weekend/Weekday Selection -->
+        <div>
+          <button class="bg-green-700 text-white py-1 px-3 rounded hover:bg-green-600 mr-2">Exclude Weekends</button>
+          <button class="bg-green-700 text-white py-1 px-3 rounded hover:bg-green-600">Exclude Weekdays</button>
+        </div>
+      </div>
 
-        <el-col class="text-center" :span="2">
-          <span class="text-gray-500">-</span>
-        </el-col>
+      <!-- Calendar Grid (Placeholder) -->
+      <div class="grid grid-cols-7 gap-2">
+        <!-- Example of a day block -->
+        <div class="bg-gray-200 h-32 flex flex-col justify-between p-2 rounded">
+          <div class="text-sm font-semibold text-center text-gray-600">1</div>
+          <div class="mt-2 space-y-1">
+            <span class="block bg-red-500 text-white text-xs rounded p-1">Event 1</span>
+            <span class="block bg-yellow-500 text-white text-xs rounded p-1">Event 2</span>
+            <span class="block bg-blue-500 text-white text-xs rounded p-1">Event 3</span>
+          </div>
+        </div>
+      </div>
 
-        <el-col :span="11">
-          <el-form-item prop="date2">
-            <client-only>
-              <el-time-picker
-                v-model="ruleForm.date2"
-                label="Pick a time"
-                placeholder="Pick a time"
-                style="width: 100%"
-              />
-            </client-only>
-          </el-form-item>
-        </el-col>
-      </el-form-item>
-
-      <el-form-item label="Instant delivery" prop="delivery">
-        <el-switch v-model="ruleForm.delivery" />
-      </el-form-item>
-
-      <el-form-item label="Activity type" prop="type">
-        <el-checkbox-group v-model="ruleForm.type">
-          <el-checkbox value="Online activities" label="Online activities" name="type" />
-          <el-checkbox value="Promotion activities" label="Promotion activities" name="type" />
-          <el-checkbox value="Offline activities" label="Offline activities" name="type" />
-          <el-checkbox value="Simple brand exposure" label="Simple brand exposure" name="type" />
-        </el-checkbox-group>
-      </el-form-item>
-
-      <el-form-item label="Resources" prop="resource">
-        <el-radio-group v-model="ruleForm.resource">
-          <el-radio value="Sponsorship" label="Sponsorship" />
-          <el-radio value="Venue" label="Sponsorship" />
-        </el-radio-group>
-      </el-form-item>
-
-      <el-form-item label="Activity form" prop="desc">
-        <el-input v-model="ruleForm.desc" type="textarea" />
-      </el-form-item>
-
-      <el-form-item>
-        <el-button type="primary" @click="submitForm">
-          Create
-        </el-button>
-        <el-button @click="resetForm">Reset</el-button>
-      </el-form-item>
-    </el-form>
-  </el-card>
+      <div class="mt-4 flex justify-between">
+        <button class="bg-red-900 text-white py-2 px-4 rounded hover:bg-red-800">Clear Selection</button>
+        <button class="bg-blue-700 text-white py-2 px-4 rounded hover:bg-blue-600">Save Selection</button>
+      </div>
+    </div>
+  </div>
 </template>
 
 <script lang="ts" setup>
 definePageMeta({
-  pageLabel: 'Home',
+  pageLabel: 'Description',
   navOrder: 1
 })
 
-const options = Array.from({ length: 10 }).map((_, idx) => ({
-  value: `${idx + 1}`,
-  label: `${idx + 1}`
-}))
-
-const ruleFormRef = useElFormRef()
-const ruleForm = useElFormModel({
-  name: 'Hello',
-  region: '',
-  count: '',
-  date1: '',
-  date2: '',
-  delivery: false,
-  type: [],
-  resource: '',
-  desc: ''
-})
-
-const rules = useElFormRules({
-  name: [useRequiredRule(), useMinLenRule(3), useMaxLenRule(5)],
-  region: useRequiredRule(),
-  count: useRequiredRule(),
-  date1: useRequiredRule(),
-  date2: useRequiredRule(),
-  type: { ...useRequiredRule(), type: 'array' },
-  resource: useRequiredRule(),
-  desc: useRequiredRule()
-})
-
-async function submitForm () {
-  await ruleFormRef.value.validate((valid, fields) => {
-    if (valid) {
-      console.log('submit!')
-    } else {
-      console.log('error submit!', fields)
-    }
-  })
-}
-
-function resetForm () {
-  ruleFormRef.value.resetFields()
-}
+const features = [
+  {
+    title: 'Weekend/Weekday Selection',
+    description: 'Select either weekends or weekdays, automatically clearing non-selected day types.'
+  },
+  {
+    title: 'Views',
+    description: 'Switch between week and month views of the calendar.'
+  },
+  {
+    title: 'Select/Deselect Days',
+    description: 'Allow users to pick and unpick days on the calendar.'
+  },
+  {
+    title: 'Add/Delete Events',
+    description: 'Events can be added or removed based on selected days (Events are limited to weekends, weekdays, or both).'
+  },
+  {
+    title: 'Event Colors',
+    description: 'Each event type has a designated color: "Available for Both" events are yellow, "Events available only for weekdays" are green, and "Events available only for weekends" are blue.'
+  },
+  {
+    title: 'LocalStorage Support',
+    description: 'All events are saved in LocalStorage to persist across sessions.'
+  },
+  {
+    title: 'Recurring Events',
+    description: 'Add/Delete events that repeat monthly on specific dates (e.g., 2nd, 31st).'
+  }
+]
 </script>

@@ -50,7 +50,6 @@
 <script lang="ts" setup>
 const navigation = computed(() => [
   { label: 'Calendar', routeName: 'calendar' },
-  { label: 'Home', routeName: 'index' },
-  { label: 'About', routeName: 'about' }
+  { label: 'Description', routeName: 'index' }
 ])
 </script>
