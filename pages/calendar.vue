@@ -6,14 +6,19 @@
     <header class="flex justify-between items-center px-4 py-5">
       <el-button type="primary" size="large" @click="goToToday">Today</el-button>
 
-      <div class="flex gap-x-4 text-blue-500">
+      <div class="h-20 flex items-center gap-x-4 text-blue-500">
         <pre class="cursor-pointer text-lg hover:text-blue-600 hover-animation" @click="previousUnit">◀◀</pre>
-        <p class="w-40 text-center text-xl font-semibold">{{ formattedDate }}</p>
+        <p
+          class="text-center font-semibold text-xl"
+          :class="[currentView === ECalendarViewType.month ? 'w-40' : 'w-60']"
+        >
+          {{ formattedDate }}
+        </p>
         <pre class="cursor-pointer text-lg hover:text-blue-600 hover-animation" @click="nextUnit">▶▶</pre>
       </div>
 
       <el-radio-group v-model="currentView" size="large">
-        <el-radio-button :value="ECalendarViewType.month">Month</el-radio-button>
+        <el-radio-button :value="ECalendarViewType.month" @click="updateCalendar">Month</el-radio-button>
         <el-radio-button :value="ECalendarViewType.week" @click="updateCurrentWeek">Week</el-radio-button>
       </el-radio-group>
     </header>
@@ -376,14 +381,18 @@ const updateWeek = (startOfWeek: Date): void => {
     week.push({ day: day.getDate(), date: new Date(day), month: day.getMonth() })
   }
 
-  // Update month if switching between months
   year.value = week[0].date.getFullYear()
   month.value = week[0].date.getMonth()
   currentWeekDays.value = week
-  formattedDate.value = new Date(year.value, month.value).toLocaleString('en-US', {
-    month: 'long',
-    year: 'numeric'
-  })
+
+  const firstDay = week[0]
+  const lastDay = week[6]
+
+  if (firstDay.month === lastDay.month) {
+    formattedDate.value = `${firstDay.day}-${lastDay.day} ${firstDay.date.toLocaleString('en-US', { month: 'long' })} ${firstDay.date.getFullYear()}`
+  } else {
+    formattedDate.value = `${firstDay.day} ${firstDay.date.toLocaleString('en-US', { month: 'long' })} ${firstDay.date.getFullYear()} - ${lastDay.day} ${lastDay.date.toLocaleString('en-US', { month: 'long' })} ${lastDay.date.getFullYear()}`
+  }
 }
 
 const removeDay = (selectedDate: string) => {
@@ -483,15 +492,15 @@ const saveEventToLocalStorage = (eventDetails: IEventDetails, selectedDays: stri
   // Check if the dates array is not empty
   if (dates.length === 0) return
 
-  const year = dates[0].getFullYear()
-  const month = dates[0].getMonth() + 1
-
   // Retrieve existing events from localStorage or initialize an empty object
   const existingEvents = JSON.parse(localStorage.getItem('events') || '{}')
 
   // Loop through selected days and save the event
   dates.forEach(day => {
+    const year = day.getFullYear()
+    const month = day.getMonth() + 1 // Get the month (1-based index)
     const dayOfMonth = day.getDate()
+
     const event = {
       comment: eventDetails.comment,
       id: `${eventDetails.comment}-${Date.now()}`,
@@ -514,7 +523,7 @@ const saveEventToLocalStorage = (eventDetails: IEventDetails, selectedDays: stri
         existingEvents[year][m][dayOfMonth].push(event)
       }
     } else {
-      // Save only for the selected month
+      // Save only for the specific date's year and month
       if (!existingEvents[year]) {
         existingEvents[year] = {}
       }
@@ -527,10 +536,10 @@ const saveEventToLocalStorage = (eventDetails: IEventDetails, selectedDays: stri
       existingEvents[year][month][dayOfMonth].push(event)
     }
   })
+
   events.value = existingEvents
   localStorage.setItem('events', JSON.stringify(existingEvents))
 }
-
 const getEventsForDay = (year: number, month: number, day: number) => {
   const yearEvents = events.value[year] || {}
   const monthEvents = yearEvents[month + 1] || {}
@@ -565,8 +574,8 @@ onMounted(() => {
 })
 </script>
 
-<style scoped>
+<style lang="scss">
 .hover-animation {
-  transition: all 0.2s;
+  @apply ease-in-out duration-300;
 }
 </style>
