@@ -57,7 +57,7 @@
 <script lang="ts" setup>
 definePageMeta({
   pageLabel: 'Description',
-  navOrder: 1
+  navOrder: 2
 })
 
 const features = [

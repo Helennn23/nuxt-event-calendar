@@ -7,5 +7,3 @@ export interface IEventDetails {
 export interface ICalendarEvent extends IEventDetails {
   id: string
 }
-
-export type TEvents = Record<number, Record<number, ICalendarEvent[]>>

@@ -1,7 +1,7 @@
 <template>
   <div class="flex h-full">
     <!-- SIDEBAR -->
-    <div class="w-[230px] border-r border-gray-300 flex flex-col">
+    <div class="min-w-[230px] border-r border-gray-300 flex flex-col">
       <div class="h-20 flex items-center justify-center space-x-2 shrink-0 border-b border-gray-300 shadow px-5">
         <AppIconBird class="w-10" />
         <AppIconCalendar class="w-6 text-blue-4-700" />
@@ -20,6 +20,9 @@
         >
           {{ item.label }}
         </NuxtLink>
+
+        <!-- Teleport target for "Selected days" content -->
+        <div id="teleport-selected-days" class="mt-10" />
       </div>
     </div>
 
@@ -49,7 +52,7 @@
 
 <script lang="ts" setup>
 const navigation = computed(() => [
-  { label: 'Calendar', routeName: 'calendar' },
-  { label: 'Description', routeName: 'index' }
+  { label: 'Home', routeName: 'index' },
+  { label: 'Calendar', routeName: 'calendar' }
 ])
 </script>
