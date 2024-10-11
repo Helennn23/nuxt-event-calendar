@@ -1,20 +1,25 @@
 <template>
-  <div v-if="loading" class="text-center font-semibold text-gray-500">
-    Loading...
-  </div>
+  <div v-if="loading" class="text-center font-semibold text-gray-500">Loading...</div>
+
   <div v-else>
     <header class="flex justify-between items-center px-4 py-5">
       <el-button type="primary" size="large" @click="goToToday">Today</el-button>
 
       <div class="h-20 flex items-center gap-x-4 text-blue-500">
-        <pre class="cursor-pointer text-lg hover:text-blue-600 hover-animation" @click="previousUnit">◀◀</pre>
+        <button aria-label="Previous Unit" @click="previousUnit">
+          <pre class="cursor-pointer text-lg hover:text-blue-600 hover-animation">◀◀</pre>
+        </button>
+
         <p
           class="text-center font-semibold text-xl"
           :class="[currentView === ECalendarViewType.month ? 'w-40' : 'w-60']"
         >
           {{ formattedDate }}
         </p>
-        <pre class="cursor-pointer text-lg hover:text-blue-600 hover-animation" @click="nextUnit">▶▶</pre>
+
+        <button aria-label="Next Unit" @click="nextUnit">
+          <pre class="cursor-pointer text-lg hover:text-blue-600 hover-animation">▶▶</pre>
+        </button>
       </div>
 
       <el-radio-group v-model="currentView" size="large">
@@ -24,98 +29,45 @@
     </header>
 
     <!-- WEEK DAYS -->
-    <div class="grid grid-cols-7 gap-1 font-medium opacity-50 text-center">
-      <p>Sunday</p>
-      <p>Monday</p>
-      <p>Tuesday</p>
-      <p>Wednesday</p>
-      <p>Thursday</p>
-      <p>Friday</p>
-      <p>Saturday</p>
-    </div>
+    <WeekDays />
 
     <!-- DAYS -->
     <div ref="daysContainer" class="grid grid-cols-7 gap-0.5 py-2">
       <!-- MONTH VIEW -->
       <template v-if="currentView === ECalendarViewType.month">
-        <div v-for="blank in firstDayIndex" :key="blank" />
-        <div
-          v-for="day in numberOfDays"
-          :key="day"
-          :class="[
-            'relative flex flex-col justify-start items-end h-16 text-gray-600 cursor-pointer border',
-            isCurrentDate(day)
-              ? 'bg-blue-100 text-blue-800 hover:text-blue-500 hover-animation'
-              : 'hover:bg-gray-100 hover:text-blue-500 hover-animation',
-          ]"
-          @click="toggleDaySelection(day)"
-        >
-          <p class="place-self-center">{{ day }}</p>
-          <AppIconCheck
-            v-if="selectedDays.includes(new Date(year, month, day).toDateString())"
-            class="absolute top-0 right-0 cursor-pointer"
-          />
-
-          <div class="w-full overflow-y-auto max-h-12">
-            <div
-              v-for="event in getEventsForDay(year, month, day)"
-              :key="event.id"
-              :class="['flex justify-between items-center pl-2 text-xs', eventColors[event.type]]"
-            >
-              <p class="truncate">{{ event.comment }}</p>
-              <button @click.stop="handleClickDelete(event, year, month, day)">
-                <AppIconDelete />
-              </button>
-            </div>
-          </div>
-        </div>
+        <MonthView
+          :firstDayIndex="firstDayIndex"
+          :numberOfDays="numberOfDays"
+          :year="year"
+          :month="month"
+          :selectedDays="selectedDays"
+          :getEventsForDay="getEventsForDay"
+          :isCurrentDate="isCurrentDate"
+          @toggleDaySelection="toggleDaySelection"
+          @deleteEvent="handleClickDelete"
+        />
       </template>
 
       <!-- WEEK VIEW -->
       <template v-else>
-        <div
+        <WeekView
           v-for="dayEntity in currentWeekDays"
           :key="dayEntity.day"
-          :class="[
-            'relative flex flex-col justify-start items-end h-80 text-gray-600 cursor-pointer border',
-            isCurrentDate(dayEntity.day)
-              ? 'bg-blue-100 text-blue-800 hover:text-blue-500 hover-animation'
-              : 'hover:bg-gray-100 hover:text-blue-500 hover-animation',
-          ]"
-          @click="toggleDaySelection(dayEntity.day)"
-        >
-          <p class="place-self-center">{{ dayEntity.day }}</p>
-          <AppIconCheck
-            v-if="selectedDays.includes(dayEntity.date.toDateString())"
-            class="absolute top-0 right-0 cursor-pointer"
-          />
-          <div class="w-full overflow-y-auto max-h-80">
-            <div
-              v-for="event in getEventsForDay(year, dayEntity.month, dayEntity.day)" :key="event.id"
-              :class="['flex justify-between items-center w-full pl-2 text-xs',
-                       eventColors[event.type]]"
-            >
-              <p class="truncate">{{ event.comment }}</p>
-              <button @click.stop="handleClickDelete(event, year, dayEntity.month, dayEntity.day)">
-                <AppIconDelete />
-              </button>
-            </div>
-          </div>
-        </div>
+          :dayEntity="dayEntity"
+          :selectedDays="selectedDays"
+          :year="year"
+          :isCurrentDate="isCurrentDate"
+          :getEventsForDay="getEventsForDay"
+          @toggleDaySelection="toggleDaySelection"
+          @deleteEvent="handleClickDelete"
+        />
       </template>
     </div>
 
     <div class="flex justify-between gap-2 mt-5">
+      <!-- Teleport to navbar -->
       <teleport to="#teleport-selected-days">
-        <div class="">
-          <h3 class="font-medium opacity-50 mb-3">Selected days:</h3>
-          <ul class="max-h-[600px] overflow-y-scroll space-y-2">
-            <li v-for="day in selectedDays" :key="day">
-              <el-button class="mr-3" type="danger" :icon="Delete" circle @click="removeDay(day)" />
-              {{ day }}
-            </li>
-          </ul>
-        </div>
+        <SelectedDays :days="selectedDays" @removeDay="removeDay" />
       </teleport>
 
       <div class="flex flex-col gap-2">
@@ -144,9 +96,7 @@
 </template>
 
 <script lang="ts" setup>
-import { Delete } from '@element-plus/icons-vue'
 import { ECalendarViewType } from '@/types/enums'
-import { eventColors } from '@/pages/calendar/calendar.config'
 import type { ICalendarEvent } from '@/pages/calendar/calendar'
 import { calendarService } from './calendar/calendar.service'
 
