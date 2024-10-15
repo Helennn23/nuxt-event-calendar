@@ -1,6 +1,6 @@
 import type { ICalendarEvent, IEventDetails } from './calendar'
 
-function CalendarService () {
+export function useCalendarService () {
   const { events } = useCalendarStore()
 
   const saveEventToLocalStorage = (eventDetails: IEventDetails, selectedDays: string[]) => {
@@ -107,5 +107,3 @@ function CalendarService () {
     removeRecurringEvents
   }
 }
-
-export const calendarService = CalendarService()

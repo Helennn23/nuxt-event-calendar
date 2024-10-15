@@ -98,12 +98,14 @@
 <script lang="ts" setup>
 import { ECalendarViewType } from '@/types/enums'
 import type { ICalendarEvent } from '@/pages/calendar/calendar'
-import { calendarService } from './calendar/calendar.service'
+import { useCalendarService } from './calendar/calendar.service'
 
 definePageMeta({
   pageLabel: 'Calendar',
   navOrder: 1
 })
+
+const { deleteSpecificEvent, removeRecurringEvents } = useCalendarService()
 
 const { events } = useCalendarStore()
 
@@ -140,7 +142,7 @@ const handleClickDelete = (event: ICalendarEvent, year: number, month: number, d
   if (event.recurring) {
     openRecurringDeleteConfirm(event, year, month + 1, day)
   } else {
-    calendarService.deleteSpecificEvent(event, year, month + 1, day)
+    deleteSpecificEvent(event, year, month + 1, day)
   }
 }
 
@@ -319,8 +321,8 @@ const openRecurringDeleteConfirm = (event: ICalendarEvent, year: number, month: 
   ElMessageBox.confirm(
     'Do you want to permanently delete all recurring items?',
     { confirmButtonText: 'Yes, all', cancelButtonText: 'Only selected event', type: 'warning' })
-    .then(() => { calendarService.removeRecurringEvents(event, year) })
-    .catch(() => { calendarService.deleteSpecificEvent(event, year, month, day) })
+    .then(() => { removeRecurringEvents(event, year) })
+    .catch(() => { deleteSpecificEvent(event, year, month, day) })
 }
 
 onMounted(() => {

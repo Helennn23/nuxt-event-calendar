@@ -51,7 +51,9 @@
 
 <script lang="ts" setup>
 import type { FormInstance, FormRules } from 'element-plus'
-import { calendarService } from '../calendar.service'
+import { useCalendarService } from '../calendar.service'
+
+const { saveEventToLocalStorage } = useCalendarService()
 
 const props = defineProps<{
   selectedDays: string[]
@@ -152,7 +154,7 @@ const submitForm = async (formEl: FormInstance | undefined) => {
   if (!formEl) return
   await formEl.validate((valid) => {
     if (valid) {
-      calendarService.saveEventToLocalStorage(eventDetails, props.selectedDays)
+      saveEventToLocalStorage(eventDetails, props.selectedDays)
       resetEventDetails()
       modalVisible.value = false
       emit('clearSelectedDays')
