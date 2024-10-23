@@ -3,7 +3,12 @@ import type { ICalendarEvent, IEventDetails } from './calendar'
 export function useCalendarService () {
   const { events } = useCalendarStore()
 
-  const saveEventToLocalStorage = (eventDetails: IEventDetails, selectedDays: string[]) => {
+  function setEventsInLocalStorage (newEvents: ICalendarEvent) {
+    events.value = newEvents
+    localStorage.setItem('events', JSON.stringify(newEvents))
+  }
+
+  function saveEventToLocalStorage (eventDetails: IEventDetails, selectedDays: string[]) {
     // Parse the date strings into Date objects
     const dates: Date[] = selectedDays.map(dateString => new Date(dateString))
 
@@ -55,10 +60,10 @@ export function useCalendarService () {
     })
 
     events.value = existingEvents
-    localStorage.setItem('events', JSON.stringify(existingEvents))
+    setEventsInLocalStorage(existingEvents)
   }
 
-  const deleteSpecificEvent = (event: ICalendarEvent, year: number, month: number, day: number) => {
+  function deleteSpecificEvent (event: ICalendarEvent, year: number, month: number, day: number) {
     const dayEvents = events.value[year]?.[month]?.[day]
     if (!dayEvents) return
 
@@ -79,7 +84,7 @@ export function useCalendarService () {
       }
     }
 
-    localStorage.setItem('events', JSON.stringify(events.value))
+    setEventsInLocalStorage(events.value)
   }
 
   function removeRecurringEvents (event: ICalendarEvent, year: number) {
@@ -98,12 +103,51 @@ export function useCalendarService () {
 
     if (!Object.keys(yearData).length) delete events.value[year]
 
-    localStorage.setItem('events', JSON.stringify(events.value))
+    setEventsInLocalStorage(events.value)
+  }
+
+  function getEventsForDay (year: number, month: number, day: number) {
+    const yearEvents = events.value[year] || {}
+    const monthEvents = yearEvents[month + 1] || {}
+    return monthEvents[day] || []
+  }
+
+  function isCurrentDate (day: number, year: number, month: number): boolean {
+    const today = new Date()
+
+    return (
+      year === today.getFullYear() &&
+      month === today.getMonth() &&
+      day === today.getDate()
+    )
+  }
+
+  function isWeekend (date: Date): boolean {
+    const day = date.getDay()
+    return day === 0 || day === 6 // Sunday or Saturday
+  }
+
+  function excludeDays (selectedDays: string[], excludeType: string): string[] {
+    if (!excludeType) return selectedDays
+
+    return selectedDays.filter((dayStr) => {
+      const day = new Date(dayStr)
+
+      if (excludeType === 'weekends') {
+        return !isWeekend(day) // Keep only workdays
+      } else if (excludeType === 'workdays') {
+        return isWeekend(day) // Keep only weekends
+      }
+    })
   }
 
   return {
     saveEventToLocalStorage,
     deleteSpecificEvent,
-    removeRecurringEvents
+    removeRecurringEvents,
+    getEventsForDay,
+    isCurrentDate,
+    isWeekend,
+    excludeDays
   }
 }

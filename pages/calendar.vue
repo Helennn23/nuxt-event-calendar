@@ -41,8 +41,6 @@
           :year="year"
           :month="month"
           :selectedDays="selectedDays"
-          :getEventsForDay="getEventsForDay"
-          :isCurrentDate="isCurrentDate"
           @toggleDaySelection="toggleDaySelection"
           @deleteEvent="handleClickDelete"
         />
@@ -56,8 +54,6 @@
           :dayEntity="dayEntity"
           :selectedDays="selectedDays"
           :year="year"
-          :isCurrentDate="isCurrentDate"
-          :getEventsForDay="getEventsForDay"
           @toggleDaySelection="toggleDaySelection"
           @deleteEvent="handleClickDelete"
         />
@@ -72,8 +68,8 @@
 
       <div class="flex flex-col gap-2">
         <el-radio-group v-model="excludeType">
-          <el-radio value="weekends" @change="excludeDays">Exclude Weekends</el-radio>
-          <el-radio value="workdays" @change="excludeDays">Exclude Workdays</el-radio>
+          <el-radio value="weekends" @change="excludeDaysHandler">Exclude Weekends</el-radio>
+          <el-radio value="workdays" @change="excludeDaysHandler">Exclude Workdays</el-radio>
         </el-radio-group>
 
         <div class="flex justify-between">
@@ -105,7 +101,7 @@ definePageMeta({
   navOrder: 1
 })
 
-const { deleteSpecificEvent, removeRecurringEvents } = useCalendarService()
+const { deleteSpecificEvent, removeRecurringEvents, excludeDays } = useCalendarService()
 
 const { events } = useCalendarStore()
 
@@ -190,14 +186,6 @@ const nextMonth = () => {
     year.value++
   }
   updateCalendar()
-}
-
-const isCurrentDate = (day: number): boolean => {
-  return (
-    year.value === today.getFullYear() &&
-    month.value === today.getMonth() &&
-    day === today.getDate()
-  )
 }
 
 const goToToday = () => {
@@ -288,33 +276,12 @@ const clearSelection = () => {
   }
 }
 
-const isWeekend = (date: Date): boolean => {
-  const day = date.getDay()
-  return day === 0 || day === 6 // Sunday or Saturday
-}
-
-const excludeDays = () => {
-  if (!excludeType.value) return
-
-  selectedDays.value = selectedDays.value.filter((dayStr) => {
-    const day = new Date(dayStr)
-
-    if (excludeType.value === 'weekends') {
-      return !isWeekend(day) // Keep only workdays
-    } else if (excludeType.value === 'workdays') {
-      return isWeekend(day) // Keep only weekends
-    }
-  })
+const excludeDaysHandler = () => {
+  selectedDays.value = excludeDays(selectedDays.value, excludeType.value)
 
   if (!selectedDays.value.length) {
     excludeType.value = ''
   }
-}
-
-const getEventsForDay = (year: number, month: number, day: number) => {
-  const yearEvents = events.value[year] || {}
-  const monthEvents = yearEvents[month + 1] || {}
-  return monthEvents[day] || []
 }
 
 const openRecurringDeleteConfirm = (event: ICalendarEvent, year: number, month: number, day: number) => {

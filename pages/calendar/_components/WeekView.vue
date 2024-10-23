@@ -2,7 +2,7 @@
   <div
     :class="[
       'relative flex flex-col justify-start items-end h-80 text-gray-600 cursor-pointer border',
-      isCurrentDate(dayEntity.day)
+      isCurrentDate(dayEntity.day, props.year, dayEntity.month)
         ? 'bg-blue-100 text-blue-800 hover:text-blue-500 hover-animation'
         : 'hover:bg-gray-100 hover:text-blue-500 hover-animation',
     ]"
@@ -30,14 +30,15 @@
 </template>
 
 <script lang="ts" setup>
+import { useCalendarService } from '@/pages/calendar/calendar.service'
 import { eventColors } from '@/pages/calendar/calendar.config'
 
-defineProps<{
+const { getEventsForDay, isCurrentDate } = useCalendarService()
+
+const props = defineProps<{
   dayEntity: { day: number; date: Date; month: number }
   selectedDays: string[]
   year: number
-  isCurrentDate: (day: number) => boolean
-  getEventsForDay: (year: number, month: number, day: number) => any[]
 }>()
 
 const emits = defineEmits(['deleteEvent', 'toggleDaySelection'])
